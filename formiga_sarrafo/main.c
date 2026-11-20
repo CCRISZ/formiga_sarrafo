@@ -6,32 +6,54 @@
 #define CORTE_NAO_CABE NULL
 #define SUCESSO 0
 
+/*
+Armazena as informações dos cortes
+tamanho: vetor de tamanho dos cortes
+quantidade: vetor da quantidade de cada corte
+Exemplo: as informações do primeiro corte serão acessadas por
+Cortes->quantidade[0]; e Cortes->tamanho[0];
+*/
 typedef struct {
 	int* quantidade;
 	int* tamanho;
 } Cortes;
 
+/*
+No das listas usadas pela estrutura de Formigas
+prox: ponteiro para o próximo elemento da lista
+dado: armazena o valor naquele no
+*/
 typedef struct NoLista{
 	struct NoLista* prox;
 	int dado;
 } NoLista;
 
+/*
+Estrutura das formigas. Cada posição dos vetores representa uma formiga
+inicio_formiga: um vetor contendo o endereço do primeiro resultado da formiga 
+ultima_formiga: um vetor contendo o endereço do ultimo resultado da formiga
+inicio_sobra: um vetor contendo o endereço do primeiro resultado de sobra
+ultima_sobra: um vetor contendo o endereço do ultimo resultado de sobra
+qnt_sarrafos_formiga: um vetor contendo a quantidade de sarrafos utilizados
+Exemplo: Se eu quiser acessar o tour da segunda formiga eu faria um laço
+percorrendo cada um dos nós começando em Formigas->inicio_formiga[1]
+*/
 typedef struct {
-	NoLista* inicio_formiga;
-	NoLista* ultima_formiga;
-	NoLista* inicio_sobra;
-	NoLista* ultima_sobra;
+	NoLista** inicio_formiga;
+	NoLista** ultima_formiga;
+	NoLista** inicio_sobra;
+	NoLista** ultima_sobra;
 	int* qnt_sarrafos_formiga;
 } Formigas;
 
-void push_sobras(Formigas* formigas, int sobra) {
+void push_sobras(Formigas* formigas, int sobra, int idx) {
 	NoLista* novo_no = malloc(sizeof(*novo_no));
 	if (!novo_no) exit(EXIT_FAILURE);
 
-	if (!formigas->ultima_sobra) formigas->ultima_sobra = formigas->inicio_sobra = novo_no;
+	if (!formigas->ultima_sobra[idx]) formigas->ultima_sobra[idx] = formigas->inicio_sobra[idx] = novo_no;
 	else {
-		formigas->ultima_sobra->prox = novo_no;
-		formigas->ultima_sobra = novo_no;
+		formigas->ultima_sobra[idx]->prox = novo_no;
+		formigas->ultima_sobra[idx] = novo_no;
 	}
 
 	novo_no->prox = NULL;
@@ -42,10 +64,10 @@ void push_formiga(Formigas* formigas, int dado, int* tamanho_restante_sarrafo, i
 	NoLista* novo_no = malloc(sizeof(*novo_no));
 	if (!novo_no) exit(EXIT_FAILURE);
 
-	if (!formigas->ultima_formiga) formigas->ultima_formiga = formigas->inicio_formiga = novo_no;
+	if (!formigas->ultima_formiga[idx]) formigas->ultima_formiga[idx] = formigas->inicio_formiga[idx] = novo_no;
 	else {
-		formigas->ultima_formiga->prox = novo_no;
-		formigas->ultima_formiga = novo_no;
+		formigas->ultima_formiga[idx]->prox = novo_no;
+		formigas->ultima_formiga[idx] = novo_no;
 	}
 
 	novo_no->prox = NULL;
@@ -53,27 +75,51 @@ void push_formiga(Formigas* formigas, int dado, int* tamanho_restante_sarrafo, i
 	novo_no->dado = (dado > *tamanho_restante_sarrafo) ? DELIMITADOR_FIM_SARRAFO : dado;
 
 	if (novo_no->dado == DELIMITADOR_FIM_SARRAFO) {
-		push_sobras(formigas, *tamanho_restante_sarrafo);
+		push_sobras(formigas, *tamanho_restante_sarrafo, idx);
 		return;
 	}
 
 	*tamanho_restante_sarrafo -= dado;
 
 	if (!*tamanho_restante_sarrafo) {
-		push_sobras(formigas, 0);
+		push_sobras(formigas, 0, idx);
 		*tamanho_restante_sarrafo = tamanho_sarrafo;
 		++formigas->qnt_sarrafos_formiga[idx];
 	}
 }
 
+void init_formigas(Formigas* formigas, int qnt_formigas) {
+	formigas->inicio_formiga = malloc(sizeof(*formigas->inicio_formiga) * qnt_formigas);
+	formigas->ultima_formiga = malloc(sizeof(*formigas->inicio_formiga) * qnt_formigas);
+	formigas->inicio_sobra = malloc(sizeof(*formigas->inicio_formiga) * qnt_formigas);
+	formigas->ultima_sobra = malloc(sizeof(*formigas->inicio_formiga) * qnt_formigas);
+	formigas->qnt_sarrafos_formiga = malloc(sizeof(*formigas->qnt_sarrafos_formiga));
+
+	if (!formigas->inicio_formiga || !formigas->ultima_formiga || !formigas->inicio_sobra || !formigas->ultima_sobra || !formigas->qnt_sarrafos_formiga) {
+		free(formigas->inicio_formiga);
+		free(formigas->ultima_formiga);
+		free(formigas->inicio_sobra);
+		free(formigas->ultima_sobra);
+		free(formigas->qnt_sarrafos_formiga);
+
+		exit(EXIT_FAILURE);
+	}
+
+	memset(formigas->inicio_formiga, 0, qnt_formigas * sizeof(*formigas->inicio_formiga));
+	memset(formigas->ultima_formiga, 0, qnt_formigas * sizeof(*formigas->ultima_formiga));
+	memset(formigas->inicio_sobra, 0, qnt_formigas * sizeof(*formigas->inicio_sobra));
+	memset(formigas->ultima_sobra, 0, qnt_formigas * sizeof(*formigas->ultima_sobra));
+	for (int i = 0; i < qnt_formigas; ++i) formigas->qnt_sarrafos_formiga[i] = 1;
+}
+
 int main(void) {
 	//teste das funções
-	Formigas teste = { .qnt_sarrafos_formiga = malloc(3 * sizeof(int))};
-	for (int i = 0; i < 3; ++i) teste.qnt_sarrafos_formiga[i] = 1;
-	int tamanho = 3;
-	push_formiga(&teste, 1, &tamanho, 3, 0);
-	push_formiga(&teste, 2, &tamanho, 3, 0);
-	push_formiga(&teste, 4, &tamanho, 3, 0);
+	Formigas teste;
+	init_formigas(&teste, 3);
+	int tamanho = 5;
+	push_formiga(&teste, 1, &tamanho, 5, 0);
+	push_formiga(&teste, 2, &tamanho, 5, 0);
+	push_formiga(&teste, 3, &tamanho, 5, 0);
 
 
 	int tam_sarrafos;

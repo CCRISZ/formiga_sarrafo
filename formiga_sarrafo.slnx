@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="formiga_sarrafo/formiga_sarrafo.vcxproj" />
+  <Project Path="formiga_sarrafo/formiga_sarrafo.vcxproj" Id="83c6e13a-5fe0-4fda-a874-b4522d38ad75" />
 </Solution>
